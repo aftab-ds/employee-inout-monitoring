@@ -19,7 +19,7 @@ def main():
     
     detector = PersonDetector()
     reid = ReIdentifier()
-    db = Database()
+    db = Database() 
     
     cap = cv2.VideoCapture(SOURCE)
     if not cap.isOpened():
