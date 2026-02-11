@@ -1,0 +1,24 @@
+# Environments
+venv/
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Project Specific
+*.mp4
+office_productivity.db
+productivity_log.csv
+yolov8n.pt
+
+# IDEs
+.vscode/
+.idea/
+
+# AI Assistant Artifacts
+.gemini/
+.agent/
+brain/
