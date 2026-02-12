@@ -6,6 +6,9 @@
    
 ### Why this "3-Model" approach is good:
 Precision: By using YOLO first, you ensure you only look for faces where people actually are, which prevents false positives from background patterns.
+
 Robustness: MTCNN allows the system to handle people even if they aren't looking directly at the camera (it can find the face within the body crop).
+
 Modular: You could swap any of these (e.g., upgrade YOLOv11 or use a different FaceNet model) without rewriting the entire system.
+
 In short: YOLO finds the person, MTCNN finds their face, and InceptionResnet remembers who they are.
