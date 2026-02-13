@@ -59,11 +59,13 @@ def main():
             
             if current_feature is not None and known_persons:
                 for person in known_persons:
-                    sim = reid.compute_similarity(current_feature, person['embedding'])
-                    if sim > max_sim:
-                        max_sim = sim
-                        best_match_id = person['id']
-                        best_match_name = person['name']
+                    # Compare against ALL embeddings for this person
+                    for emb in person['embeddings']:
+                        sim = reid.compute_similarity(current_feature, emb)
+                        if sim > max_sim:
+                            max_sim = sim
+                            best_match_id = person['id']
+                            best_match_name = person['name']
             
             if max_sim > MATCH_THRESHOLD:
                 is_known = True
@@ -144,7 +146,10 @@ def main():
                      pid = db.add_person(name, target_feat)
                      print(f"Registered {name} (ID: {pid}).")
                  elif name_exists:
-                     print(f"Error: Name '{name}' already exists! Registration cancelled.")
+                     # Add to existing person
+                     pid = next(p['id'] for p in known_persons if p['name'].lower() == name.lower())
+                     db.add_embedding(pid, target_feat)
+                     print(f"Added new embedding for existing person {name} (ID: {pid}).")
                  else:
                      print("Cancelled.")
              else:

@@ -72,12 +72,14 @@ def main():
                 candidates = all_persons
                 
                 for person in candidates:
-                    sim = reid.compute_similarity(current_feature, person['embedding'])
-                    if sim > max_sim:
-                        max_sim = sim
-                        best_match_id = person['id']
-                        best_match_name = person['name']
-                        entry_time = person.get('entry_time', 0)
+                    # Compare against ALL embeddings for this person
+                    for emb in person['embeddings']:
+                        sim = reid.compute_similarity(current_feature, emb)
+                        if sim > max_sim:
+                            max_sim = sim
+                            best_match_id = person['id']
+                            best_match_name = person['name']
+                            entry_time = person.get('entry_time', 0)
 
             # Visualization Logic
             if max_sim > MATCH_THRESHOLD:

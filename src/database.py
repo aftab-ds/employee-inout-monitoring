@@ -14,10 +14,17 @@ class Database:
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS persons (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                embedding BLOB,
+                name TEXT UNIQUE,
                 status INTEGER DEFAULT 0, -- 0: OUT, 1: IN
                 entry_time REAL
+            )
+        ''')
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS embeddings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                person_id INTEGER,
+                embedding BLOB,
+                FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE
             )
         ''')
         self.conn.commit()
@@ -37,14 +44,30 @@ class Database:
         out.seek(0)
         return np.load(out)
 
-    def add_person(self, name, embedding):
-        """Add a new person and mark as IN."""
-        embedding_blob = self.adapt_array(embedding)
+    def add_person(self, name, embedding=None):
+        """Add a new person and optionally their first embedding."""
         current_time = time.time()
-        self.cursor.execute('INSERT INTO persons (name, embedding, status, entry_time) VALUES (?, ?, ?, ?)',
-                            (name, embedding_blob, 1, current_time))
+        try:
+            self.cursor.execute('INSERT INTO persons (name, status, entry_time) VALUES (?, ?, ?)',
+                                (name, 1, current_time))
+            person_id = self.cursor.lastrowid
+            
+            if embedding is not None:
+                self.add_embedding(person_id, embedding)
+            
+            self.conn.commit()
+            return person_id
+        except sqlite3.IntegrityError:
+            # Name already exists
+            self.cursor.execute('SELECT id FROM persons WHERE name = ?', (name,))
+            return self.cursor.fetchone()[0]
+
+    def add_embedding(self, person_id, embedding):
+        """Add an embedding for an existing person."""
+        embedding_blob = self.adapt_array(embedding)
+        self.cursor.execute('INSERT INTO embeddings (person_id, embedding) VALUES (?, ?)',
+                            (person_id, embedding_blob))
         self.conn.commit()
-        return self.cursor.lastrowid
 
     def update_status(self, person_id, status):
         """Update IN/OUT status."""
@@ -56,17 +79,24 @@ class Database:
         self.conn.commit()
 
     def get_all_embeddings(self):
-        """Retrieve all embeddings and IDs."""
-        self.cursor.execute('SELECT id, name, embedding, status, entry_time FROM persons')
-        rows = self.cursor.fetchall()
+        """Retrieve all persons and their associated embeddings."""
+        self.cursor.execute('SELECT id, name, status, entry_time FROM persons')
+        person_rows = self.cursor.fetchall()
+        
         results = []
-        for row in rows:
+        for p_row in person_rows:
+            p_id = p_row[0]
+            self.cursor.execute('SELECT embedding FROM embeddings WHERE person_id = ?', (p_id,))
+            emb_rows = self.cursor.fetchall()
+            
+            embeddings = [self.convert_array(r[0]) for r in emb_rows]
+            
             results.append({
-                'id': row[0],
-                'name': row[1],
-                'embedding': self.convert_array(row[2]),
-                'status': row[3],
-                'entry_time': row[4]
+                'id': p_id,
+                'name': p_row[1],
+                'embeddings': embeddings, # List of arrays
+                'status': p_row[2],
+                'entry_time': p_row[3]
             })
         return results
 
