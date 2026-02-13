@@ -12,3 +12,17 @@ Robustness: MTCNN allows the system to handle people even if they aren't looking
 Modular: You could swap any of these (e.g., upgrade YOLOv11 or use a different FaceNet model) without rewriting the entire system.
 
 In short: YOLO finds the person, MTCNN finds their face, and InceptionResnet remembers who they are.
+
+### For Registering a Person
+1. Prepare Images: Create a folder named registration_images. Inside it, create subfolders for each person (e.g., registration_images/Person1/).
+
+2. Add Images: Place several photos of each person in their respective subfolder (different angles, lighting, etc.).
+
+3. Run Registration:
+   
+python register_persons.py
+
+4. Verify: Check the database list:
+
+python manage_db.py --list
+
